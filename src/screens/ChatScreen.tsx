@@ -41,7 +41,15 @@ const ChatScreen: React.FC<Props> = ({ route }) => {
 
   useEffect(() => {
     navigation.setOptions({
-      title: assistantName || 'Chat',
+      headerTitle: () => (
+        <View style={styles.headerTitleContainer}>
+          <Image
+            source={require('../../assets/assistant1.png')} // Path to the icon
+            style={styles.headerIcon}
+          />
+          <Text style={styles.headerTitleText}>{assistantName || 'Chat'}</Text>
+        </View>
+      ),
     });
   }, [navigation, assistantName]);
 
@@ -305,5 +313,18 @@ const styles = StyleSheet.create({
   },
   removeImageButton: {
     marginLeft: 10,
+  },
+  headerTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerIcon: {
+    width: 24,   // Adjust icon size
+    height: 24,  // Adjust icon size
+    marginRight: 8,  // Space between icon and text
+  },
+  headerTitleText: {
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });

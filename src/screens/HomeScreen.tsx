@@ -1,10 +1,8 @@
-// src/screens/HomeScreen.tsx
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
-import { aiHelpers } from '../AiHelpers'; 
-
+import { aiHelpers } from '../AiHelpers';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -20,10 +18,12 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           <TouchableOpacity
             key={helper.id}
             style={styles.square}
-            onPress={() => navigation.navigate('Chat', { 
-              helperId: helper.id,
-              assistantName: helper.name 
-            })}
+            onPress={() =>
+              navigation.navigate('Chat', {
+                helperId: helper.id,
+                assistantName: helper.name,
+              })
+            }
           >
             <Image source={helper.image} style={styles.image} />
             <Text style={styles.title}>{helper.name}</Text>
