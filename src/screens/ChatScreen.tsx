@@ -8,6 +8,8 @@ import {
   Text,
   Image,
   TouchableOpacity,
+  KeyboardAvoidingView,
+  Keyboard // Add this import
 } from 'react-native';
 import {
   GiftedChat,
@@ -27,7 +29,6 @@ import * as ImagePicker from 'expo-image-picker';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { sendMessageToGPT } from '../services/OpenAIService';
 import { Alert } from 'react-native';
-
 
 type ChatScreenRouteProp = RouteProp<RootStackParamList, 'Chat'>;
 
@@ -325,6 +326,11 @@ const pickImage = async () => {
         renderBubble={renderBubble}
         minComposerHeight={40}
         maxComposerHeight={200}
+        listViewProps={{
+          scrollEventThrottle: 400,
+          keyboardShouldPersistTaps: 'always',
+          keyboardDismissMode: 'none'
+        }}
       />
     </SafeAreaView>
   );
