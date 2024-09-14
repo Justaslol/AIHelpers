@@ -26,6 +26,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { sendMessageToGPT } from '../services/OpenAIService';
+import { Alert } from 'react-native';
 
 type ChatScreenRouteProp = RouteProp<RootStackParamList, 'Chat'>;
 
@@ -41,12 +42,56 @@ const ChatScreen: React.FC<Props> = ({ route }) => {
   const { helperId, assistantName } = route.params;
   const navigation = useNavigation();
 
+  const clearChatHistory = useCallback(async () => {
+    Alert.alert(
+      "Clear Chat History",
+      "Are you sure you want to clear all messages? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Clear", 
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await AsyncStorage.removeItem(`chat_${helperId}`);
+              await AsyncStorage.removeItem(`gpt_chat_${helperId}`);
+              setMessages([]);
+              setGptMessages([]);
+              // Optionally, you can add the welcome message back
+              const welcomeMessage: IMessage = {
+                _id: '1',
+                text: `Hello! I'm ${assistantName}. How can I assist you today?`,
+                createdAt: new Date(),
+                user: { _id: '2', name: assistantName },
+              };
+              setMessages([welcomeMessage]);
+              setGptMessages([
+                {
+                  role: 'assistant',
+                  content: `Hello! I'm ${assistantName}. How can I assist you today?`,
+                },
+              ]);
+            } catch (error) {
+              console.error('Failed to clear chat history:', error);
+              Alert.alert("Error", "Failed to clear chat history. Please try again.");
+            }
+          }
+        }
+      ]
+    );
+  }, [helperId, assistantName]);
+
   useEffect(() => {
     navigation.setOptions({
       title: assistantName || 'Chat',
+      headerRight: () => (
+        <TouchableOpacity onPress={clearChatHistory} style={{ marginRight: 15 }}>
+          <Icon name="delete" size={24} color="#FF3B30" />
+        </TouchableOpacity>
+      ),
     });
     loadMessages();
-  }, []);
+  }, [navigation, assistantName, clearChatHistory]);
 
   useEffect(() => {
     saveMessages();
@@ -55,8 +100,10 @@ const ChatScreen: React.FC<Props> = ({ route }) => {
   const loadMessages = async () => {
     try {
       const storedMessages = await AsyncStorage.getItem(`chat_${helperId}`);
-      if (storedMessages) {
+      const storedGptMessages = await AsyncStorage.getItem(`gpt_chat_${helperId}`);
+      if (storedMessages && storedGptMessages) {
         setMessages(JSON.parse(storedMessages));
+        setGptMessages(JSON.parse(storedGptMessages));
       } else {
         // Welcome message from the AI helper
         const welcomeMessage: IMessage = {
@@ -82,6 +129,7 @@ const ChatScreen: React.FC<Props> = ({ route }) => {
   const saveMessages = async () => {
     try {
       await AsyncStorage.setItem(`chat_${helperId}`, JSON.stringify(messages));
+      await AsyncStorage.setItem(`gpt_chat_${helperId}`, JSON.stringify(gptMessages));
     } catch (error) {
       console.error('Failed to save messages:', error);
     }
