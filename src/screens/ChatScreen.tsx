@@ -178,7 +178,7 @@ const pickImage = async () => {
   const renderSend = (props: SendProps<IMessage>) => (
     <Send {...props} containerStyle={styles.sendContainer}>
       <View style={styles.sendButton}>
-        <Text style={styles.sendButtonText}>Send</Text>
+        <Icon name="arrow-up" size={24} color="#fff" />
       </View>
     </Send>
   );
