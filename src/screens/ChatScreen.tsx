@@ -1,11 +1,30 @@
+// src/screens/ChatScreen.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, Platform, ActivityIndicator, Text } from 'react-native';
-import { GiftedChat, IMessage, Bubble, Send, SendProps } from 'react-native-gifted-chat';
+import {
+  View,
+  StyleSheet,
+  Platform,
+  ActivityIndicator,
+  Text,
+  Image,
+  TouchableOpacity,
+} from 'react-native';
+import {
+  GiftedChat,
+  IMessage,
+  Bubble,
+  Send,
+  SendProps,
+  Actions,
+  InputToolbar,
+  Composer,
+} from 'react-native-gifted-chat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { RouteProp } from '@react-navigation/native';
+import { RouteProp, useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../../App';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native'; // Add this if not already imported
+import * as ImagePicker from 'expo-image-picker';// Import an icon library
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 type ChatScreenRouteProp = RouteProp<RootStackParamList, 'Chat'>;
 
@@ -16,6 +35,7 @@ type Props = {
 const ChatScreen: React.FC<Props> = ({ route }) => {
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [isTyping, setIsTyping] = useState<boolean>(false);
+  const [image, setImage] = useState<{ uri: string } | null>(null);
   const { helperId, assistantName } = route.params;
   const navigation = useNavigation();
 
@@ -63,9 +83,26 @@ const ChatScreen: React.FC<Props> = ({ route }) => {
 
   const onSend = useCallback(
     (newMessages: IMessage[] = []) => {
-      setMessages((previousMessages) =>
-        GiftedChat.append(previousMessages, newMessages)
-      );
+      if (image) {
+        // Include the image in the message
+        const imageMessage: IMessage = {
+          _id: Math.random().toString(),
+          createdAt: new Date(),
+          user: { _id: '1' },
+          image: image.uri,
+          text: newMessages[0]?.text || '', // Include any text entered
+        };
+        setMessages((previousMessages) =>
+          GiftedChat.append(previousMessages, [imageMessage])
+        );
+        setImage(null); // Reset the image after sending
+      } else {
+        setMessages((previousMessages) =>
+          GiftedChat.append(previousMessages, newMessages)
+        );
+      }
+
+      // Simulate bot typing
       setIsTyping(true);
       setTimeout(() => {
         const botMessage: IMessage = {
@@ -80,18 +117,83 @@ const ChatScreen: React.FC<Props> = ({ route }) => {
         );
       }, 1500);
     },
-    [helperId]
+    [helperId, image]
   );
 
-  const renderSend = (props: SendProps<IMessage>) => {
-    return (
-      <Send {...props}>
-        <View style={styles.sendButton}>
-          <Text style={styles.sendButtonText}>Send</Text>
+  // Function to open image picker
+const pickImage = async () => {
+  // Request permission to access media library
+  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (status !== 'granted') {
+    alert('Sorry, we need camera roll permissions to make this work!');
+    return;
+  }
+
+  try {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+      allowsEditing: false,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      // Access the URI from the assets array
+      setImage({ uri: result.assets[0].uri });
+    } else {
+      console.log('User cancelled image picker');
+    }
+  } catch (error) {
+    console.error('Error picking image: ', error);
+  }
+};
+
+  // Custom actions component to show the image picker icon
+  const renderActions = (props: any) => (
+    <Actions
+      {...props}
+      containerStyle={styles.actionsContainer}
+      icon={() => <Icon name="camera" size={28} color="#0084FF" />}
+      onPressActionButton={pickImage}
+    />
+  );
+
+  // Render the image attachment preview
+  const renderChatFooter = () => {
+    if (image) {
+      return (
+        <View style={styles.imagePreviewContainer}>
+          <Image source={{ uri: image.uri }} style={styles.imagePreview} />
+          <TouchableOpacity
+            onPress={() => setImage(null)}
+            style={styles.removeImageButton}
+          >
+            <Icon name="close-circle" size={24} color="#FF3B30" />
+          </TouchableOpacity>
         </View>
-      </Send>
-    );
+      );
+    }
+    return null;
   };
+
+  const renderSend = (props: SendProps<IMessage>) => (
+    <Send {...props} containerStyle={styles.sendContainer}>
+      <View style={styles.sendButton}>
+        <Text style={styles.sendButtonText}>Send</Text>
+      </View>
+    </Send>
+  );
+
+  const renderInputToolbar = (props: any) => (
+    <InputToolbar
+      {...props}
+      containerStyle={styles.inputToolbar}
+      primaryStyle={{ alignItems: 'center' }}
+    />
+  );
+
+  const renderComposer = (props: any) => (
+    <Composer {...props} textInputStyle={styles.textInput} />
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -110,9 +212,10 @@ const ChatScreen: React.FC<Props> = ({ route }) => {
         alwaysShowSend
         scrollToBottom
         renderSend={renderSend}
-        textInputProps={{
-          style: styles.textInput,
-        }}
+        renderActions={renderActions}
+        renderInputToolbar={renderInputToolbar}
+        renderComposer={renderComposer}
+        renderChatFooter={renderChatFooter}
         renderBubble={(props) => (
           <Bubble
             {...props}
@@ -142,25 +245,55 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
+  inputToolbar: {
+    borderTopWidth: 0,
+    paddingHorizontal: 10,
+    backgroundColor: '#F2F2F7',
+  },
+  actionsContainer: {
+    marginLeft: 0,
+    marginBottom: 0,
+    marginRight: 5,
+  },
   textInput: {
     backgroundColor: '#fff',
     borderRadius: 20,
     paddingHorizontal: 12,
-    paddingVertical: Platform.OS === 'ios' ? 10 : 5,
-    flex: 1,
+    paddingVertical: Platform.OS === 'ios' ? 8 : 5,
+    marginLeft: 0,
+    marginRight: 0,
+    color: '#000',
+  },
+  sendContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 0,
+    marginBottom: 0,
   },
   sendButton: {
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 15,
     paddingVertical: 5,
-    marginRight: 10,
-    marginBottom: 5,
     backgroundColor: '#0084FF',
     borderRadius: 20,
   },
   sendButtonText: {
     color: '#fff',
     fontSize: 16,
+  },
+  imagePreviewContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: '#fff',
+  },
+  imagePreview: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+  },
+  removeImageButton: {
+    marginLeft: 10,
   },
 });
