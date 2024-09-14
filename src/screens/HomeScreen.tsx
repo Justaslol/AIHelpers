@@ -3,58 +3,14 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
+import { aiHelpers } from '../AiHelpers'; 
+
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
 type Props = {
   navigation: HomeScreenNavigationProp;
 };
-
-interface AIHelper {
-  id: string;
-  name: string;
-  description: string;
-  image: any; // Update this type if using remote images
-}
-
-const aiHelpers: AIHelper[] = [
-  {
-    id: 'assistant_1',
-    name: 'Assistant 1',
-    description: 'Your friendly helper',
-    image: require('../../assets/assistant1.png'),
-  },
-  {
-    id: 'assistant_2',
-    name: 'Assistant 2',
-    description: 'Expert in languages',
-    image: require('../../assets/assistant2.png'),
-  },
-  {
-    id: 'assistant_3',
-    name: 'Assistant 3',
-    description: 'Math genius',
-    image: require('../../assets/assistant3.png'),
-  },
-  {
-    id: 'assistant_4',
-    name: 'Assistant 4',
-    description: 'Science guru',
-    image: require('../../assets/assistant4.png'),
-  },
-  {
-    id: 'assistant_5',
-    name: 'Assistant 5',
-    description: 'History buff',
-    image: require('../../assets/assistant5.png'),
-  },
-  {
-    id: 'assistant_6',
-    name: 'Assistant 6',
-    description: 'Art expert',
-    image: require('../../assets/assistant6.png'),
-  },
-];
 
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
   return (
@@ -65,7 +21,8 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
             key={helper.id}
             style={styles.square}
             onPress={() => navigation.navigate('Chat', { 
-              helperId: helper.id 
+              helperId: helper.id,
+              assistantName: helper.name 
             })}
           >
             <Image source={helper.image} style={styles.image} />

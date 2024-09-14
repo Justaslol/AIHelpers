@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../App';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native'; // Add this if not already imported
 
 type ChatScreenRouteProp = RouteProp<RootStackParamList, 'Chat'>;
 
@@ -15,7 +16,14 @@ type Props = {
 const ChatScreen: React.FC<Props> = ({ route }) => {
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [isTyping, setIsTyping] = useState<boolean>(false);
-  const { helperId } = route.params;
+  const { helperId, assistantName } = route.params;
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    navigation.setOptions({
+      title: assistantName || 'Chat',
+    });
+  }, [navigation, assistantName]);
 
   useEffect(() => {
     loadMessages();
