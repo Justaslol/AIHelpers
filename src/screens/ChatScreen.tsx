@@ -23,8 +23,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RouteProp, useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../../App';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';// Import an icon library
+import * as ImagePicker from 'expo-image-picker';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { sendMessageToGPT } from '../services/OpenAIService';
 
 type ChatScreenRouteProp = RouteProp<RootStackParamList, 'Chat'>;
 
@@ -36,34 +37,15 @@ const ChatScreen: React.FC<Props> = ({ route }) => {
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [isTyping, setIsTyping] = useState<boolean>(false);
   const [image, setImage] = useState<{ uri: string } | null>(null);
+  const [gptMessages, setGptMessages] = useState<any[]>([]);
   const { helperId, assistantName } = route.params;
   const navigation = useNavigation();
 
   useEffect(() => {
     navigation.setOptions({
-      headerTitle: () => (
-        <View style={styles.headerTitleContainer}>
-          <Image
-            source={require('../../assets/assistant1.png')} // Path to the icon
-            style={styles.headerIcon}
-          />
-          <Text style={styles.headerTitleText}>{assistantName || 'Chat'}</Text>
-        </View>
-      ),
+      title: assistantName || 'Chat',
     });
-  }, [navigation, assistantName]);
-
-  useEffect(() => {
     loadMessages();
-    if (messages.length === 0) {
-      const welcomeMessage: IMessage = {
-        _id: '1',
-        text: 'Hello! How can I assist you today?',
-        createdAt: new Date(),
-        user: { _id: '2', name: 'AI Helper' },
-      };
-      setMessages([welcomeMessage]);
-    }
   }, []);
 
   useEffect(() => {
@@ -75,6 +57,22 @@ const ChatScreen: React.FC<Props> = ({ route }) => {
       const storedMessages = await AsyncStorage.getItem(`chat_${helperId}`);
       if (storedMessages) {
         setMessages(JSON.parse(storedMessages));
+      } else {
+        // Welcome message from the AI helper
+        const welcomeMessage: IMessage = {
+          _id: '1',
+          text: `Hello! I'm ${assistantName}. How can I assist you today?`,
+          createdAt: new Date(),
+          user: { _id: '2', name: assistantName },
+        };
+        setMessages([welcomeMessage]);
+        // Initialize GPT conversation
+        setGptMessages([
+          {
+            role: 'assistant',
+            content: `Hello! I'm ${assistantName}. How can I assist you today?`,
+          },
+        ]);
       }
     } catch (error) {
       console.error('Failed to load messages:', error);
@@ -90,42 +88,50 @@ const ChatScreen: React.FC<Props> = ({ route }) => {
   };
 
   const onSend = useCallback(
-    (newMessages: IMessage[] = []) => {
-      if (image) {
-        // Include the image in the message
-        const imageMessage: IMessage = {
-          _id: Math.random().toString(),
-          createdAt: new Date(),
-          user: { _id: '1' },
-          image: image.uri,
-          text: newMessages[0]?.text || '', // Include any text entered
-        };
-        setMessages((previousMessages) =>
-          GiftedChat.append(previousMessages, [imageMessage])
-        );
-        setImage(null); // Reset the image after sending
-      } else {
-        setMessages((previousMessages) =>
-          GiftedChat.append(previousMessages, newMessages)
-        );
-      }
+    async (newMessages: IMessage[] = []) => {
+      setMessages((previousMessages) =>
+        GiftedChat.append(previousMessages, newMessages)
+      );
 
-      // Simulate bot typing
+      // Add user's message to GPT conversation
+      const userMessage = {
+        role: 'user',
+        content: newMessages[0].text,
+      };
+      setGptMessages((prev) => [...prev, userMessage]);
+
       setIsTyping(true);
-      setTimeout(() => {
-        const botMessage: IMessage = {
+
+      try {
+        // Send message to OpenAI
+        const response = await sendMessageToGPT(gptMessages.concat(userMessage));
+        const assistantMessageContent = response.choices[0].message.content;
+
+        const assistantMessage: IMessage = {
           _id: Math.random().toString(),
-          text: 'This is a hardcoded response from the bot.',
+          text: assistantMessageContent.trim(),
           createdAt: new Date(),
-          user: { _id: '2', name: 'AI Helper' },
+          user: { _id: '2', name: assistantName },
         };
-        setIsTyping(false);
+
         setMessages((previousMessages) =>
-          GiftedChat.append(previousMessages, [botMessage])
+          GiftedChat.append(previousMessages, [assistantMessage])
         );
-      }, 1500);
+
+        // Add assistant's response to GPT conversation
+        const assistantGptMessage = {
+          role: 'assistant',
+          content: assistantMessageContent,
+        };
+        setGptMessages((prev) => [...prev, assistantGptMessage]);
+      } catch (error) {
+        console.error(error);
+        // Optionally, show an error message to the user
+      } finally {
+        setIsTyping(false);
+      }
     },
-    [helperId, image]
+    [gptMessages]
   );
 
   // Function to open image picker
