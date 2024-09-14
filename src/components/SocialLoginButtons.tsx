@@ -3,7 +3,6 @@ import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import * as Google from 'expo-auth-session/providers/google';
 import { auth } from '../firebase';
-import firebase from 'firebase/app';
 import { GoogleAuthProvider } from 'firebase/auth';
 import { signInWithCredential } from 'firebase/auth';
 

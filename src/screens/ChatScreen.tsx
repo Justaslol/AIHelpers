@@ -9,7 +9,8 @@ import {
   Image,
   TouchableOpacity,
   KeyboardAvoidingView,
-  Keyboard // Add this import
+  Keyboard,
+  TouchableWithoutFeedback
 } from 'react-native';
 import {
   GiftedChat,
@@ -22,7 +23,7 @@ import {
   Composer,
 } from 'react-native-gifted-chat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { RouteProp, useNavigation } from '@react-navigation/native';
+import { RouteProp, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { RootStackParamList } from '../../App';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -230,7 +231,7 @@ const pickImage = async () => {
     <Actions
       {...props}
       containerStyle={styles.actionsContainer}
-      icon={() => <Icon name="camera" size={28} color="#0084FF" />}
+      icon={() => <Icon name="camera" size={28} color="#757575" />}
       onPressActionButton={pickImage}
     />
   );
@@ -282,12 +283,12 @@ const pickImage = async () => {
     <Bubble
       {...props}
       wrapperStyle={{
-        left: { backgroundColor: '#F1F0F0' },
-        right: { backgroundColor: '#0084FF' },
+        left: { backgroundColor: '#E0E0E0' },
+        right: { backgroundColor: '#616161' },
       }}
       textStyle={{
-        left: { color: '#000' },
-        right: { color: '#fff' },
+        left: { color: '#212121' },
+        right: { color: '#FFFFFF' },
       }}
       isTyping={props.currentMessage._id === currentTypingMessage?._id}
     />
@@ -302,37 +303,72 @@ const pickImage = async () => {
     };
   }, []);
 
+  // Add this effect to handle screen focus
+  useFocusEffect(
+    useCallback(() => {
+      const keyboardDidShowListener = Keyboard.addListener(
+        'keyboardDidShow',
+        () => {
+          // Force update when keyboard shows
+          setMessages((prevMessages) => [...prevMessages]);
+        }
+      );
+
+      return () => {
+        keyboardDidShowListener.remove();
+      };
+    }, [])
+  );
+
+  // Add this effect to handle keyboard changes
+  useEffect(() => {
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => {
+        // Force update when keyboard hides
+        setMessages((prevMessages) => [...prevMessages]);
+      }
+    );
+
+    return () => {
+      keyboardDidHideListener.remove();
+    };
+  }, []);
+
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <GiftedChat
-        messages={messages}
-        onSend={(messages) => onSend(messages)}
-        user={{ _id: '1' }}
-        isTyping={isTyping}
-        renderAvatar={null}
-        renderLoading={() => (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#0084FF" />
-          </View>
-        )}
-        placeholder="Type a message..."
-        alwaysShowSend
-        scrollToBottom
-        renderSend={renderSend}
-        renderActions={renderActions}
-        renderInputToolbar={renderInputToolbar}
-        renderComposer={renderComposer}
-        renderChatFooter={renderChatFooter}
-        renderBubble={renderBubble}
-        minComposerHeight={40}
-        maxComposerHeight={200}
-        listViewProps={{
-          scrollEventThrottle: 400,
-          keyboardShouldPersistTaps: 'always',
-          keyboardDismissMode: 'none'
-        }}
-      />
-    </SafeAreaView>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
+        <GiftedChat
+          messages={messages}
+          onSend={(messages) => onSend(messages)}
+          user={{ _id: '1' }}
+          isTyping={isTyping}
+          renderAvatar={null}
+          renderLoading={() => (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#0084FF" />
+            </View>
+          )}
+          placeholder="Type a message..."
+          alwaysShowSend
+          scrollToBottom
+          renderSend={renderSend}
+          renderActions={renderActions}
+          renderInputToolbar={renderInputToolbar}
+          renderComposer={renderComposer}
+          renderChatFooter={renderChatFooter}
+          renderBubble={renderBubble}
+          minComposerHeight={40}
+          maxComposerHeight={200}
+          listViewProps={{
+            scrollEventThrottle: 400,
+            keyboardShouldPersistTaps: 'handled',
+            keyboardDismissMode: 'none'
+          }}
+          minInputToolbarHeight={Platform.OS === 'ios' ? 44 : 54}
+        />
+      </SafeAreaView>
+    </TouchableWithoutFeedback>
   );
 };
 
@@ -341,7 +377,7 @@ export default ChatScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#F5F5F5',
   },
   loadingContainer: {
     flex: 1,
@@ -350,8 +386,8 @@ const styles = StyleSheet.create({
   inputToolbar: {
     borderTopWidth: 0,
     paddingHorizontal: 10,
-    backgroundColor: '#F2F2F7',
-    paddingVertical: Platform.OS === 'ios' ? 8 : 6,  // Add vertical padding for proper containment
+    backgroundColor: '#EEEEEE',
+    paddingVertical: Platform.OS === 'ios' ? 8 : 6,
   },
   actionsContainer: {
     marginLeft: 0,
@@ -359,13 +395,13 @@ const styles = StyleSheet.create({
     marginRight: 5,
   },
   textInput: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: Platform.OS === 'ios' ? 8 : 5,
     marginLeft: 0,
     marginRight: 0,
-    color: '#000',
+    color: '#212121',
     overflow: 'hidden'
   },
   sendContainer: {
@@ -380,7 +416,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 5,
-    backgroundColor: '#0084FF',
+    backgroundColor: '#757575',
     borderRadius: 20,
   },
   sendButtonText: {
