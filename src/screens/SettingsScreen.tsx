@@ -1,7 +1,15 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Switch } from 'react-native';
+import { auth } from '../firebase'; // Update this path
+
 
 const SettingsScreen: React.FC = () => {
+  const handleSignOut = () => {
+    auth.signOut().catch((error: Error) => {
+      console.error('Sign out error:', error);
+    });
+  };
+
   return (
     <View style={styles.container}>
 
@@ -35,7 +43,7 @@ const SettingsScreen: React.FC = () => {
         <Text style={styles.settingText}>About</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.settingItem}>
+      <TouchableOpacity style={styles.settingItem} onPress={handleSignOut}>
         <Text style={styles.settingText}>Sign Out</Text>
       </TouchableOpacity>
     </View>

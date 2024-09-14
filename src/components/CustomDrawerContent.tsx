@@ -1,12 +1,28 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList } from 'react-native';
 import { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { aiHelpers } from '../AiHelpers';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CommonActions } from '@react-navigation/native';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
 const CustomDrawerContent = (props: DrawerContentComponentProps) => {
+  const [userName, setUserName] = useState('');
+
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUserName(user.displayName || user.email || 'User');
+      } else {
+        setUserName('');
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
       <FlatList
@@ -46,7 +62,7 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
                 style={styles.profileImage}
                 onError={() => console.log('Failed to load profile image')}
               />
-              <Text style={styles.profileName}>Justas</Text>
+              <Text style={styles.profileName}>{userName}</Text>
             </View>
             <Ionicons name="ellipsis-horizontal" size={24} color="black" />
           </TouchableOpacity>
