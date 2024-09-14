@@ -22,7 +22,7 @@ export const sendMessageToGPT = async (messages: any[]): Promise<GPTResponse> =>
     const response = await axios.post(
       API_URL,
       {
-        model: 'gpt-3.5-turbo', // Use 'gpt-4' if you have access
+        model: 'gpt-4o-mini', // Use 'gpt-4' if you have access
         messages,
       },
       {

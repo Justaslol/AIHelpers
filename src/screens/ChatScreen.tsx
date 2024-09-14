@@ -1,5 +1,5 @@
 // src/screens/ChatScreen.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -28,6 +28,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { sendMessageToGPT } from '../services/OpenAIService';
 import { Alert } from 'react-native';
 
+
 type ChatScreenRouteProp = RouteProp<RootStackParamList, 'Chat'>;
 
 type Props = {
@@ -41,6 +42,8 @@ const ChatScreen: React.FC<Props> = ({ route }) => {
   const [gptMessages, setGptMessages] = useState<any[]>([]);
   const { helperId, assistantName } = route.params;
   const navigation = useNavigation();
+  const [currentTypingMessage, setCurrentTypingMessage] = useState<IMessage | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const clearChatHistory = useCallback(async () => {
     Alert.alert(
@@ -137,27 +140,38 @@ const ChatScreen: React.FC<Props> = ({ route }) => {
 
   const onSend = useCallback(
     async (newMessages: IMessage[] = []) => {
+      let messageToSend = newMessages[0];
+
+      // If there's an attached image, add it to the message for display purposes only
+      if (image) {
+        messageToSend = {
+          ...messageToSend,
+          image: image.uri,
+        };
+        setImage(null); // Clear the image after sending
+      }
+
       setMessages((previousMessages) =>
-        GiftedChat.append(previousMessages, newMessages)
+        GiftedChat.append(previousMessages, [messageToSend])
       );
 
-      // Add user's message to GPT conversation
+      // Add user's message to GPT conversation (text only)
       const userMessage = {
         role: 'user',
-        content: newMessages[0].text,
+        content: messageToSend.text,
       };
       setGptMessages((prev) => [...prev, userMessage]);
 
       setIsTyping(true);
 
       try {
-        // Send message to OpenAI
+        // Send message to OpenAI (text only)
         const response = await sendMessageToGPT(gptMessages.concat(userMessage));
         const assistantMessageContent = response.choices[0].message.content;
 
         const assistantMessage: IMessage = {
           _id: Math.random().toString(),
-          text: assistantMessageContent.trim(),
+          text: assistantMessageContent,
           createdAt: new Date(),
           user: { _id: '2', name: assistantName },
         };
@@ -172,14 +186,15 @@ const ChatScreen: React.FC<Props> = ({ route }) => {
           content: assistantMessageContent,
         };
         setGptMessages((prev) => [...prev, assistantGptMessage]);
+
       } catch (error) {
-        console.error(error);
+        console.error('Error getting response from GPT:', error);
         // Optionally, show an error message to the user
       } finally {
         setIsTyping(false);
       }
     },
-    [gptMessages]
+    [gptMessages, assistantName, image]
   );
 
   // Function to open image picker
@@ -262,6 +277,30 @@ const pickImage = async () => {
     />
   );
 
+  const renderBubble = (props: any) => (
+    <Bubble
+      {...props}
+      wrapperStyle={{
+        left: { backgroundColor: '#F1F0F0' },
+        right: { backgroundColor: '#0084FF' },
+      }}
+      textStyle={{
+        left: { color: '#000' },
+        right: { color: '#fff' },
+      }}
+      isTyping={props.currentMessage._id === currentTypingMessage?._id}
+    />
+  );
+
+  // Add this useEffect for cleanup
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <GiftedChat
@@ -283,19 +322,7 @@ const pickImage = async () => {
         renderInputToolbar={renderInputToolbar}
         renderComposer={renderComposer}
         renderChatFooter={renderChatFooter}
-        renderBubble={(props) => (
-          <Bubble
-            {...props}
-            wrapperStyle={{
-              left: { backgroundColor: '#F1F0F0' },
-              right: { backgroundColor: '#0084FF' },
-            }}
-            textStyle={{
-              left: { color: '#000' },
-              right: { color: '#fff' },
-            }}
-          />
-        )}
+        renderBubble={renderBubble}
         minComposerHeight={40}
         maxComposerHeight={200}
       />
