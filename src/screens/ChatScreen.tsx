@@ -192,7 +192,12 @@ const pickImage = async () => {
   );
 
   const renderComposer = (props: any) => (
-    <Composer {...props} textInputStyle={styles.textInput} />
+    <Composer
+      {...props}
+      textInputStyle={styles.textInput}
+      multiline={true}
+      scrollEnabled={false}  // Prevent scrolling inside the input field when text fits
+    />
   );
 
   return (
@@ -229,6 +234,8 @@ const pickImage = async () => {
             }}
           />
         )}
+        minComposerHeight={40}
+        maxComposerHeight={200}
       />
     </SafeAreaView>
   );
@@ -249,6 +256,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 0,
     paddingHorizontal: 10,
     backgroundColor: '#F2F2F7',
+    paddingVertical: Platform.OS === 'ios' ? 8 : 6,  // Add vertical padding for proper containment
   },
   actionsContainer: {
     marginLeft: 0,
@@ -263,17 +271,19 @@ const styles = StyleSheet.create({
     marginLeft: 0,
     marginRight: 0,
     color: '#000',
+    overflow: 'hidden'
   },
   sendContainer: {
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 0,
+    marginLeft: 8,
     marginBottom: 0,
   },
   sendButton: {
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 15,
+    paddingHorizontal: 10,
     paddingVertical: 5,
     backgroundColor: '#0084FF',
     borderRadius: 20,
