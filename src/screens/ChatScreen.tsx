@@ -30,6 +30,7 @@ import * as ImagePicker from 'expo-image-picker';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { sendMessageToGPT } from '../services/OpenAIService';
 import { Alert } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 type ChatScreenRouteProp = RouteProp<RootStackParamList, 'Chat'>;
 
@@ -231,7 +232,7 @@ const pickImage = async () => {
     <Actions
       {...props}
       containerStyle={styles.actionsContainer}
-      icon={() => <Icon name="camera" size={28} color="#757575" />}
+      icon={() => <Icon name="camera" size={28} color="#0084FF" />}
       onPressActionButton={pickImage}
     />
   );
@@ -336,8 +337,11 @@ const pickImage = async () => {
   }, []);
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollViewContent}
+        keyboardShouldPersistTaps="handled"
+      >
         <GiftedChat
           messages={messages}
           onSend={(messages) => onSend(messages)}
@@ -367,12 +371,10 @@ const pickImage = async () => {
           }}
           minInputToolbarHeight={Platform.OS === 'ios' ? 44 : 54}
         />
-      </SafeAreaView>
-    </TouchableWithoutFeedback>
+      </KeyboardAwareScrollView>
+    </SafeAreaView>
   );
 };
-
-export default ChatScreen;
 
 const styles = StyleSheet.create({
   container: {
@@ -450,4 +452,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
+  scrollViewContent: {
+    flexGrow: 1,
+  },
 });
+
+export default ChatScreen;
