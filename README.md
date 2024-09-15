@@ -35,9 +35,9 @@ npm install
 ```
 OPENAI_API_KEY=your_openai_api_key
 FIREBASE_API_KEY=your_firebase_api_key
-FIREBASE_AUTH_DOMAIN=sintra-test-app.firebaseapp.com
-FIREBASE_PROJECT_ID=sintra-test-app
-FIREBASE_STORAGE_BUCKET=sintra-test-app.appspot.com
+FIREBASE_AUTH_DOMAIN=
+FIREBASE_PROJECT_ID=
+FIREBASE_STORAGE_BUCKET=
 FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
 FIREBASE_APP_ID=your_firebase_app_id
 ```
